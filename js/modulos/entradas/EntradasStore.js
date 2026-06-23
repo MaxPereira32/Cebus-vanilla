@@ -1,42 +1,65 @@
+/* ==========================================================================
+   ARQUIVO: EntradasStore.js
+   GERADO EM: 21/06/2026
+   ==========================================================================
+   DOCUMENTAÇÃO PADRÃO DO PROJETO
+   ========================================================================== */
+
 (function () {
   var repo = Cebus.repositorios.criar('entradas');
   var repoEstoque = Cebus.repositorios.criar('estoque');
 
-  function _atualizarEstoque(dados) {
+  function _resolverIdProduto(dados) {
     var id = dados.ID_Produto || dados.idProduto;
-    if (!id) return Promise.resolve();
+    if (id) return Promise.resolve(id);
     var produto = dados.Produto || dados.produto || '';
-    var unidade = dados.Unidade || dados.unidade || 'UN';
-    var quantidade = parseFloat(dados.Quantidade || dados.quantidade || 0);
+    if (!produto) return Promise.resolve(null);
+    return repoEstoque.listar().then(function (lista) {
+      var encontrado = lista.find(function (e) {
+        return (e.Produto || '').toLowerCase() === produto.toLowerCase();
+      });
+      return encontrado ? (encontrado.ID_Produto || encontrado.id) : Cebus.util.gerarIdComPrefixo('PR');
+    });
+  }
 
-    return repoEstoque.obterPorId(id).then(function (item) {
-      var novoItem;
-      if (item) {
-        var entTotal = (item.EntradaTotal || 0) + quantidade;
-        var saiTotal = item.SaidaTotal || 0;
+  // delta: quantidade a somar ao EntradaTotal (positivo = nova entrada, negativo = remoção/edição)
+  function _atualizarEstoque(dados, delta) {
+    return _resolverIdProduto(dados).then(function (id) {
+      if (!id) return;
+      var produto = dados.Produto || dados.produto || '';
+      var unidade = dados.Unidade || dados.unidade || 'UN';
+      // Se delta não foi fornecido, usa a quantidade completa (comportamento original para nova entrada)
+      var incremento = (delta !== undefined) ? delta : parseFloat(dados.Quantidade || dados.quantidade || 0);
+      var fornecedor = dados.Fornecedor || dados.fornecedor || dados.fornecedorNome || '';
+
+      return repoEstoque.obterPorId(id).then(function (item) {
+        var entTotal, saiTotal, estoqueMinimo, estoqueMaximo;
+        if (item) {
+          entTotal = (item.EntradaTotal || 0) + incremento;
+          saiTotal = item.SaidaTotal || 0;
+          estoqueMinimo = item.estoqueMinimo || 0;
+          estoqueMaximo = item.estoqueMaximo || 999999;
+        } else {
+          entTotal = Math.max(0, incremento);
+          saiTotal = 0;
+          estoqueMinimo = 0;
+          estoqueMaximo = 999999;
+        }
+        entTotal = Math.max(0, entTotal);
         var saldo = entTotal - saiTotal;
-        var situacao = _definirSituacao(saldo, item.estoqueMinimo || 0, item.estoqueMaximo || 999999);
-        novoItem = {
-          id: item.id || id,
+        var situacao = _definirSituacao(saldo, estoqueMinimo, estoqueMaximo);
+        var novoItem = {
           ID_Produto: id, Produto: produto, Unidade: unidade,
           quantidade: saldo, unidade: unidade,
           EntradaTotal: entTotal, SaidaTotal: saiTotal,
           Saldo: saldo, Situacao: situacao,
-          estoqueMinimo: item.estoqueMinimo || 0,
-          estoqueMaximo: item.estoqueMaximo || 999999,
+          estoqueMinimo: estoqueMinimo,
+          estoqueMaximo: estoqueMaximo,
+          Fornecedor: item ? (item.Fornecedor || fornecedor) : fornecedor,
         };
-        return repoEstoque.salvar(novoItem);
-      } else {
-        novoItem = {
-          id: id,
-          ID_Produto: id, Produto: produto, Unidade: unidade,
-          quantidade: quantidade, unidade: unidade,
-          EntradaTotal: quantidade, SaidaTotal: 0,
-          Saldo: quantidade, Situacao: 'NORMAL',
-          estoqueMinimo: 0, estoqueMaximo: 999999,
-        };
-        return repoEstoque.salvar(novoItem);
-      }
+        console.log('[Entradas] _atualizarEstoque id=' + id + ' delta=' + incremento + ' entTotal=' + entTotal + ' saiTotal=' + saiTotal + ' saldo=' + saldo);
+        return repoEstoque.salvarComId(id, novoItem);
+      });
     });
   }
 
@@ -62,19 +85,55 @@
           });
         },
         salvar: function (dados) {
-          return repo.salvar(dados).then(function (item) {
-            return _atualizarEstoque(item).then(function () {
-              store.carregar();
-              Cebus.barramento.emitir('entrada:salvo', item);
-              Cebus.barramento.emitir('estoque:atualizado', { id: item.ID_Produto });
-              return item;
+          var quantidadeAntiga = 0;
+          var idEdicao = dados.id;
+          // Se é edição, busca a quantidade antiga para calcular o delta correto
+          var promessaAnterior = idEdicao
+            ? repo.listar().then(function (lista) {
+                var anterior = lista.find(function (r) { return r.id === idEdicao; });
+                quantidadeAntiga = anterior ? parseFloat(anterior.Quantidade || anterior.quantidade || 0) : 0;
+                if (anterior && !dados.ID_Produto) dados.ID_Produto = anterior.ID_Produto;
+                console.log('[Entradas] salvar (edicao) quantidadeAntiga=' + quantidadeAntiga);
+              })
+            : Promise.resolve();
+
+          return promessaAnterior.then(function () {
+            return _resolverIdProduto(dados).then(function (id) {
+              if (id) dados.ID_Produto = id;
+              var docId = dados.ID_Entrada || dados.id || Cebus.util.gerarId();
+              dados.id = docId;
+              return repo.salvarComId(docId, dados).then(function () {
+                var qtdNova = parseFloat(dados.Quantidade || dados.quantidade || 0);
+                var delta = idEdicao ? (qtdNova - quantidadeAntiga) : qtdNova;
+                console.log('[Entradas] salvar delta=' + delta + ' qtdNova=' + qtdNova + ' qtdAntiga=' + quantidadeAntiga);
+                return _atualizarEstoque(dados, delta).then(function () {
+                  store.carregar();
+                  Cebus.barramento.emitir('entrada:salvo', dados);
+                  Cebus.barramento.emitir('estoque:atualizado', { id: dados.ID_Produto });
+                  return dados;
+                });
+              });
             });
           });
         },
         remover: function (id) {
-          return repo.remover(id).then(function () {
-            store.carregar();
-            Cebus.barramento.emitir('entrada:removido', { id: id });
+          // Busca a entrada antes de remover para decrementar o estoque
+          return repo.listar().then(function (lista) {
+            var entrada = lista.find(function (r) { return r.id === id; });
+            return repo.remover(id).then(function () {
+              if (entrada) {
+                var qtd = parseFloat(entrada.Quantidade || entrada.quantidade || 0);
+                console.log('[Entradas] remover: revertendo ' + qtd + ' do estoque para produto ' + (entrada.ID_Produto || entrada.Produto));
+                // delta negativo para decrementar o EntradaTotal
+                return _atualizarEstoque(entrada, -qtd).then(function () {
+                  store.carregar();
+                  Cebus.barramento.emitir('entrada:removido', { id: id });
+                  Cebus.barramento.emitir('estoque:atualizado', { id: entrada.ID_Produto });
+                });
+              }
+              store.carregar();
+              Cebus.barramento.emitir('entrada:removido', { id: id });
+            });
           });
         },
         definirItemAtual: function (item) { set({ itemAtual: item }); },

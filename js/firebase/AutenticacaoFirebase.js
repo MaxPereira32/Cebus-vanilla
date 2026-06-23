@@ -1,3 +1,10 @@
+/* ==========================================================================
+   ARQUIVO: AutenticacaoFirebase.js
+   GERADO EM: 21/06/2026
+   ==========================================================================
+   DOCUMENTAÇÃO PADRÃO DO PROJETO
+   ========================================================================== */
+
 (function () {
   Cebus.firebase = Cebus.firebase || {};
 
@@ -10,14 +17,15 @@
 
     login: function (email, senha) {
       if (!this._auth) return Promise.reject(new Error('Firebase nao inicializado'));
-      return this._auth.signInWithEmailAndPassword(email, senha)
-        .then(function (cred) {
-          return {
-            uid: cred.user.uid,
-            email: cred.user.email,
-            nome: cred.user.displayName || email.split('@')[0],
-          };
-        });
+      return this._auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).then(function () {
+        return this._auth.signInWithEmailAndPassword(email, senha);
+      }.bind(this)).then(function (cred) {
+        return {
+          uid: cred.user.uid,
+          email: cred.user.email,
+          nome: cred.user.displayName || email.split('@')[0],
+        };
+      });
     },
 
     logout: function () {

@@ -1,3 +1,10 @@
+/* ==========================================================================
+   ARQUIVO: CarregadorDinamico.js
+   GERADO EM: 21/06/2026
+   ==========================================================================
+   DOCUMENTAÇÃO PADRÃO DO PROJETO
+   ========================================================================== */
+
 (function () {
   'use strict';
 
@@ -14,7 +21,7 @@
       }
 
       var script = document.createElement('script');
-      script.src = caminho + '?v=1.0.6';
+      script.src = caminho + '?v=1.1.7';
       script.onload = function () {
         cacheScripts[caminho] = true;
         resolve();

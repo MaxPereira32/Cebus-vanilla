@@ -1,3 +1,10 @@
+/* ==========================================================================
+   ARQUIVO: RepositorioBase.js
+   GERADO EM: 21/06/2026
+   ==========================================================================
+   DOCUMENTAÇÃO PADRÃO DO PROJETO
+   ========================================================================== */
+
 (function () {
   Cebus.repositorios = Cebus.repositorios || {};
 
@@ -106,6 +113,41 @@
 
     self._salvarDadosLocais(novosRegistros);
     return Promise.resolve(dados);
+  };
+
+  RepositorioBase.prototype.salvarComId = function (id, dados) {
+    var self = this;
+    var dadosComId = Object.assign({}, dados, { id: id });
+    dadosComId.atualizadoEm = new Date().toISOString();
+
+    // Atualiza o cache local
+    var registros = self._obterDadosLocais();
+    var idx = registros.findIndex(function (r) { return r.id === id; });
+    var novosRegistros = registros.slice();
+    if (idx >= 0) {
+      novosRegistros[idx] = Object.assign({}, novosRegistros[idx], dadosComId);
+    } else {
+      dadosComId.criadoEm = dadosComId.criadoEm || dadosComId.atualizadoEm;
+      novosRegistros.push(dadosComId);
+    }
+
+    console.log('[Repository] salvarComId', id, '- online:', !_estaOffline());
+
+    if (!_estaOffline()) {
+      var promise = Cebus.firebase.criarRepositorio(self.nomeColecao).salvarComId(id, dados);
+      return _comTimeout(promise, 4000, 'Tempo limite excedido ao salvarComId no Firebase')
+        .then(function (result) {
+          self._salvarDadosLocais(novosRegistros);
+          return result;
+        }).catch(function (e) {
+          console.error('[Repository] salvarComId erro Firebase, salvando local:', e);
+          self._salvarDadosLocais(novosRegistros);
+          return dadosComId;
+        });
+    }
+
+    self._salvarDadosLocais(novosRegistros);
+    return Promise.resolve(dadosComId);
   };
 
   RepositorioBase.prototype.remover = function (id) {

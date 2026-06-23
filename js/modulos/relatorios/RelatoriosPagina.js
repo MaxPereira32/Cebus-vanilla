@@ -1,3 +1,10 @@
+/* ==========================================================================
+   ARQUIVO: RelatoriosPagina.js
+   GERADO EM: 21/06/2026
+   ==========================================================================
+   DOCUMENTAÇÃO PADRÃO DO PROJETO
+   ========================================================================== */
+
 (function () {
   var relatorios = [
     { id: 'estoque', icone: 'package', nome: 'Relatório de Estoque', descricao: 'Relatório completo com a situação atual de todos os produtos em estoque.' },

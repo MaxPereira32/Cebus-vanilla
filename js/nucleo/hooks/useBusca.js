@@ -1,3 +1,10 @@
+/* ==========================================================================
+   ARQUIVO: useBusca.js
+   GERADO EM: 21/06/2026
+   ==========================================================================
+   DOCUMENTAÇÃO PADRÃO DO PROJETO
+   ========================================================================== */
+
 (function () {
   'use strict';
 
@@ -40,9 +47,9 @@
       obterTermo: function () { return termo; },
       filtrar: filtrar,
       renderizarCampo: function (placeholder) {
-        return '<div class="campo-busca" style="position:relative;max-width:320px;">' +
-          '<i data-lucide="search" size="16" style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--cor-texto-secundario);pointer-events:none;"></i>' +
-          '<input type="text" class="input input-busca" data-acao="buscar" placeholder="' + (placeholder || 'Buscar...') + '" style="padding-left:2.25rem;" value="' + termo + '">' +
+        return '<div class="campo-busca" style="position:relative;max-width:600px;">' +
+          '<i data-lucide="search" size="20" style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--cor-texto-secundario);pointer-events:none;"></i>' +
+          '<input type="text" class="input input-busca" data-acao="buscar" placeholder="' + (placeholder || 'Buscar...') + '" style="font-size:1rem;width:100%;" value="' + termo + '">' +
           '</div>';
       }
     };

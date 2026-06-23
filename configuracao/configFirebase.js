@@ -1,3 +1,10 @@
+/* ==========================================================================
+   ARQUIVO: configFirebase.js
+   GERADO EM: 21/06/2026
+   ==========================================================================
+   DOCUMENTAÇÃO PADRÃO DO PROJETO
+   ========================================================================== */
+
 Cebus.firebase = Cebus.firebase || {};
 Cebus.firebase.config = {
   apiKey: "AIzaSyAKprgURYnq1RpZMOkyfp42muFlX2dvKqw",

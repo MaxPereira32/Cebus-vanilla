@@ -1,3 +1,10 @@
+/* ==========================================================================
+   ARQUIVO: Principal.js
+   GERADO EM: 21/06/2026
+   ==========================================================================
+   DOCUMENTAÇÃO PADRÃO DO PROJETO
+   ========================================================================== */
+
 (function () {
   'use strict';
 
@@ -17,14 +24,13 @@
     if (typeof Cebus.firebase.autenticacao.inicializar === 'function') {
       Cebus.firebase.autenticacao.inicializar();
     }
-    var authStore = Cebus.registrador.obterStore('autenticacao');
-    if (authStore && authStore.init) {
-      authStore.init();
-    }
-
     _semearUsuarioPadrao();
 
-    setTimeout(function () { Cebus.roteador.iniciar(); }, 100);
+    var authStore = Cebus.registrador.obterStore('autenticacao');
+    var promessa = authStore && authStore.init ? authStore.init() : Promise.resolve();
+    promessa.then(function () {
+      Cebus.roteador.iniciar();
+    });
     console.log('[Cebus] Aplicacao iniciada com sucesso!');
   }
 

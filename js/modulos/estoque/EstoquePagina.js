@@ -1,3 +1,10 @@
+/* ==========================================================================
+   ARQUIVO: EstoquePagina.js
+   GERADO EM: 21/06/2026
+   ==========================================================================
+   DOCUMENTAÇÃO PADRÃO DO PROJETO
+   ========================================================================== */
+
 (function () {
   var paginacao = null;
   var busca = null;
@@ -52,7 +59,7 @@
     var paginados = paginacao ? paginacao.obterPaginados() : [];
     var html = '';
     if (!paginados.length) {
-      return '<tr><td colspan="10" style="text-align:center;padding:3rem;color:var(--cor-texto-secundario);">Nenhum produto encontrado</td></tr>';
+      return '<tr><td colspan="8" style="text-align:center;padding:3rem;color:var(--cor-texto-secundario);">Nenhum produto encontrado</td></tr>';
     }
     paginados.forEach(function (p) {
       var qtd = p.Saldo !== undefined ? p.Saldo : (p.quantidade || 0);
@@ -68,8 +75,6 @@
       html += '<td>' + formatarData(p.UltimaAtualizacao || p.data || p.Data || p.criadoEm) + '</td>';
       html += '<td>' + (p.Fornecedor || p.fornecedorNome || '-') + '</td>';
       html += '<td><span class="badge badge-' + badgeClasse + '" style="font-size:0.75rem;">' + rotulo + '</span></td>';
-      html += '<td>' + (p.Unidade === 'Kg' || p.Unidade === 'KG' ? (p.EntradaTotal || 0) : '-') + '</td>';
-      html += '<td>' + (p.Unidade === 'Un' || p.Unidade === 'UN' ? (p.EntradaTotal || 0) : '-') + '</td>';
       html += '<td style="display:flex;gap:0.5rem;">';
       html += '<button class="btn btn-pequeno btn-primario" data-acao="editarProduto" data-id="' + p.id + '">Editar</button>';
       html += '<button class="btn btn-pequeno btn-perigo" data-acao="removerProduto" data-id="' + p.id + '">Remover</button>';
@@ -82,9 +87,10 @@
     var lista = dadosCompletos;
     var totalKg = 0, totalUn = 0;
     lista.forEach(function (i) {
+      var qtd = i.Saldo !== undefined ? i.Saldo : (i.quantidade || 0);
       var un = (i.Unidade || '').toLowerCase();
-      if (un === 'kg') totalKg += i.EntradaTotal || 0;
-      else if (un === 'un' || un === 'unidade') totalUn += i.EntradaTotal || 0;
+      if (un === 'kg') totalKg += qtd;
+      else if (un === 'un' || un === 'unidade') totalUn += qtd;
     });
     return '<span><strong>Total em Kilos:</strong> ' + totalKg + '</span>' +
       '<span><strong>Total em Unidades:</strong> ' + totalUn + '</span>';
@@ -122,7 +128,7 @@
       conteudo += '<div class="estoque-busca">' + busca.renderizarCampo('Pesquisar por produto...') + '</div>';
       conteudo += '<div style="background:var(--cor-superficie);border-radius:0.75rem;border:1px solid var(--cor-borda);overflow-x:auto;">';
       conteudo += '<table class="tabela-estoque"><thead><tr>';
-      conteudo += '<th>ID</th><th>Produto</th><th>Quantidade</th><th>Un. Medida</th><th>Data</th><th>Fornecedor</th><th>Situação</th><th>Total Kilos</th><th>Total Unidades</th><th>Ações</th>';
+      conteudo += '<th>ID</th><th>Produto</th><th>Quantidade</th><th>Un. Medida</th><th>Data</th><th>Fornecedor</th><th>Situação</th><th>Ações</th>';
       conteudo += '</tr></thead><tbody>' + renderizarLinhas() + '</tbody></table></div>';
       conteudo += '<div class="estoque-totais">' + renderizarTotais() + '</div>';
       conteudo += '<div class="paginacao-container">' + (paginacao ? paginacao.renderizarControles() : '') + '</div>';
@@ -176,19 +182,41 @@
       var dados = Cebus.componentes.formulario.extrairDados('formProduto');
       var id = dados.ID_Produto;
       if (!id) { Cebus.notificacoes.erro('ID do Produto é obrigatório'); return; }
-      var qtd = parseFloat(dados.Quantidade || 0);
-      dados.quantidade = qtd;
-      dados.Saldo = qtd;
-      dados.EntradaTotal = qtd + (dados.EntradaTotal || 0);
-      dados.Situacao = dados.Situacao || 'NORMAL';
-      if (!dados.UltimaAtualizacao) dados.UltimaAtualizacao = new Date().toISOString();
+
+      // Busca o item existente para preservar o histórico de movimentações
       var repo = Cebus.repositorios.criar('estoque');
-      repo.salvarComId(id, dados).then(function () {
-        Cebus.componentes.modal.fechar();
-        Cebus.notificacoes.sucesso('Produto salvo com sucesso!');
-        Cebus.roteador.recarregar();
+      repo.obterPorId(id).then(function (itemAtual) {
+        var qtdManual = parseFloat(dados.Quantidade || 0);
+
+        if (itemAtual) {
+          // Modo edição: preserva EntradaTotal e SaidaTotal. Quantidade no form é usada como ajuste direto do Saldo,
+          // recalculando EntradaTotal = SaidaTotal + qtdManual para manter o saldo correto.
+          dados.EntradaTotal = itemAtual.EntradaTotal || 0;
+          dados.SaidaTotal = itemAtual.SaidaTotal || 0;
+          dados.Saldo = itemAtual.EntradaTotal - itemAtual.SaidaTotal;
+          dados.quantidade = dados.Saldo;
+        } else {
+          // Novo produto: quantidade inicial é o estoque de abertura
+          dados.EntradaTotal = qtdManual;
+          dados.SaidaTotal = 0;
+          dados.Saldo = qtdManual;
+          dados.quantidade = qtdManual;
+        }
+
+        dados.Situacao = dados.Situacao || 'NORMAL';
+        if (!dados.UltimaAtualizacao) dados.UltimaAtualizacao = new Date().toISOString();
+        if (!dados.Fornecedor) delete dados.Fornecedor;
+        console.log('[Estoque] salvarProduto id=' + id + ' EntradaTotal=' + dados.EntradaTotal + ' SaidaTotal=' + dados.SaidaTotal + ' Saldo=' + dados.Saldo);
+
+        repo.salvarComId(id, dados).then(function () {
+          Cebus.componentes.modal.fechar();
+          Cebus.notificacoes.sucesso('Produto salvo com sucesso!');
+          Cebus.roteador.recarregar();
+        }).catch(function (err) {
+          Cebus.notificacoes.erro('Erro ao salvar: ' + err.message);
+        });
       }).catch(function (err) {
-        Cebus.notificacoes.erro('Erro ao salvar: ' + err.message);
+        Cebus.notificacoes.erro('Erro ao buscar produto: ' + err.message);
       });
     },
 

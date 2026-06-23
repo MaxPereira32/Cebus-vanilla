@@ -1,3 +1,10 @@
+/* ==========================================================================
+   ARQUIVO: configRotas.js
+   GERADO EM: 21/06/2026
+   ==========================================================================
+   DOCUMENTAÇÃO PADRÃO DO PROJETO
+   ========================================================================== */
+
 Cebus.config = Cebus.config || {};
 Cebus.config.rotas = Cebus.config.rotas || [];
 Cebus.config.rotas.push(

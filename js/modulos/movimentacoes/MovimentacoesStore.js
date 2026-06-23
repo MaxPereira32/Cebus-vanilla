@@ -1,3 +1,10 @@
+/* ==========================================================================
+   ARQUIVO: MovimentacoesStore.js
+   GERADO EM: 21/06/2026
+   ==========================================================================
+   DOCUMENTAÇÃO PADRÃO DO PROJETO
+   ========================================================================== */
+
 (function () {
   function _buscarColecao(colecao, tipo) {
     Cebus.servicos.debug.logFluxo('Service', 'buscarColecao: ' + colecao + ' (' + tipo + ')');

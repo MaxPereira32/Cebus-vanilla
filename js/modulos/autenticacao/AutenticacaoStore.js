@@ -1,3 +1,10 @@
+/* ==========================================================================
+   ARQUIVO: AutenticacaoStore.js
+   GERADO EM: 21/06/2026
+   ==========================================================================
+   DOCUMENTAÇÃO PADRÃO DO PROJETO
+   ========================================================================== */
+
 (function () {
   function _buscarNivelUsuario(email) {
     if (!email) return Promise.resolve('operador');
@@ -36,27 +43,32 @@
     metodos: function (store, set) {
       return {
         init: function () {
-          if (!Cebus.firebase || !Cebus.firebase.autenticacao) return;
+          if (!Cebus.firebase || !Cebus.firebase.autenticacao) return Promise.resolve();
+          set({ carregando: true });
           var atual = Cebus.firebase.autenticacao.obterUsuarioAtual();
           if (atual) {
             _buscarNivelUsuario(atual.email).then(function (nivel) {
               set({ usuario: Object.assign({}, atual, { nivel: nivel }), estaLogado: true, nivel: nivel });
             });
           }
-          Cebus.firebase.autenticacao.ouvirEstado(function (usuario) {
-            if (usuario) {
-              _buscarNivelUsuario(usuario.email).then(function (nivel) {
-                set({
-                  usuario: Object.assign({}, usuario, { nivel: nivel }),
-                  estaLogado: true,
-                  nivel: nivel,
-                  carregando: false,
-                  erro: null
+          return new Promise(function (resolve) {
+            Cebus.firebase.autenticacao.ouvirEstado(function (usuario) {
+              if (usuario) {
+                _buscarNivelUsuario(usuario.email).then(function (nivel) {
+                  set({
+                    usuario: Object.assign({}, usuario, { nivel: nivel }),
+                    estaLogado: true,
+                    nivel: nivel,
+                    carregando: false,
+                    erro: null
+                  });
+                  resolve();
                 });
-              });
-            } else {
-              set({ usuario: null, estaLogado: false, nivel: null, carregando: false, erro: null });
-            }
+              } else {
+                set({ usuario: null, estaLogado: false, nivel: null, carregando: false, erro: null });
+                resolve();
+              }
+            });
           });
         },
         login: function (email, senha) {

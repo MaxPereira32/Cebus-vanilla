@@ -1,147 +1,141 @@
+/* ==========================================================================
+   ARQUIVO: PainelStore.js
+   GERADO EM: 21/06/2026
+   ==========================================================================
+   DOCUMENTAÇÃO PADRÃO DO PROJETO
+   ========================================================================== */
+
 (function () {
   var store = Cebus.util.criarStore({
     estadoInicial: {
       resumo: {
         totalProdutos: 0,
-        totalFornecedores: 0,
-        totalEntradas: 0,
-        totalSaidas: 0,
-        movimentosHoje: 0,
-        valorEstoque: 0,
+        totalEntradasKg: 0,
+        totalSaidasKg: 0,
+        estoqueTotalKg: 0,
       },
-      ultimosMovimentos: [],
-      produtosBaixoEstoque: [],
+      movimentacoesChartData: { labels: [], entradas: [], saidas: [] },
+      categoriasChartData: { labels: [], data: [], colors: [] },
+      alertasEstoque: [],
+      ultimosProdutos: [],
     },
     metodos: function (store, set) {
       return {
         carregarResumo: function () {
-          set({ resumo: Object.assign({}, store.obterEstado().resumo) });
-          
-          var hoje = new Date().toISOString().split('T')[0];
+          var hoje = new Date();
+          var db = Cebus.firebase && Cebus.firebase.obterDb ? Cebus.firebase.obterDb() : null;
 
-          var estaOffline = true;
-          if (Cebus.firebase && Cebus.firebase._inicializado) {
-            var auth = typeof Cebus.firebase.obterAuth === 'function' ? Cebus.firebase.obterAuth() : null;
-            if (auth && auth.currentUser) {
-              estaOffline = false;
+          function processarDados(produtos, estoque, entradas, saidas) {
+            var resumo = { totalProdutos: estoque.length, totalEntradasKg: 0, totalSaidasKg: 0, estoqueTotalKg: 0 };
+            var ultimosProds = [];
+            var alertas = [];
+            var porCategoria = {};
+
+            // Entradas e saídas para o total (em Kg/Unidades)
+            entradas.forEach(function(e) { resumo.totalEntradasKg += parseFloat(e.Quantidade || e.quantidade || 0); });
+            saidas.forEach(function(s) { resumo.totalSaidasKg += parseFloat(s.Quantidade || s.quantidade || 0); });
+
+            // Processar Estoque
+            estoque.forEach(function(item) {
+              resumo.estoqueTotalKg += parseFloat(item.Saldo || item.saldo || item.quantidade || 0);
+              
+              var cat = item.Categoria || 'Outros';
+              if (!porCategoria[cat]) porCategoria[cat] = 0;
+              porCategoria[cat] += parseFloat(item.Saldo || item.saldo || item.quantidade || 0);
+
+              // Alertas
+              var saldo = parseFloat(item.Saldo || item.saldo || item.quantidade || 0);
+              var sit = item.Situacao || (saldo <= 0 ? 'ESGOTADO' : 'BAIXO');
+              if (saldo <= (item.estoqueMinimo || 5)) {
+                alertas.push({
+                  id: item.id || item.ID_Produto,
+                  Produto: item.Produto || item.produto || '-',
+                  Saldo: saldo,
+                  Unidade: item.Unidade || 'Kg',
+                  Situacao: saldo <= 0 ? 'Zerado' : 'Baixo',
+                  classe: saldo <= 0 ? 'perigo' : 'aviso'
+                });
+              }
+
+              // Últimos Produtos (simplificado)
+              ultimosProds.push({
+                id: item.id || item.ID_Produto,
+                ID_Produto: item.ID_Produto || item.id,
+                Produto: item.Produto || item.produto || '-',
+                Categoria: item.Categoria || 'Alimentos',
+                Quantidade: saldo,
+                Unidade: item.Unidade || 'Kg',
+                UltimaMovimentacao: item.atualizadoEm || item.criadoEm || '-',
+                Situacao: saldo > (item.estoqueMinimo || 5) ? 'OK' : 'BAIXO'
+              });
+            });
+
+            // Ordenar alertas por gravidade (zerados primeiro)
+            alertas.sort(function(a, b) { return a.Saldo - b.Saldo; });
+            // Últimos produtos (pegar os 5 mais recentes pela data de atualização)
+            ultimosProds.sort(function(a, b) { return (b.UltimaMovimentacao || '').localeCompare(a.UltimaMovimentacao || ''); });
+
+            // Dados do gráfico de rosca (Categorias)
+            var catLabels = Object.keys(porCategoria);
+            var catData = catLabels.map(function(l) { return porCategoria[l]; });
+            var catColors = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899']; // Verde, Azul, Laranja, Roxo, Rosa
+
+            // Dados do gráfico de linha (Movimentações dos últimos 7 dias)
+            var diasLabels = [];
+            var dataEntradas = [];
+            var dataSaidas = [];
+            for (var i = 6; i >= 0; i--) {
+              var d = new Date(hoje);
+              d.setDate(d.getDate() - i);
+              var dataISO = d.toISOString().split('T')[0];
+              var formatoDia = d.getDate().toString().padStart(2, '0') + '/' + (d.getMonth() + 1).toString().padStart(2, '0');
+              diasLabels.push(formatoDia);
+              
+              var sumEntrada = 0;
+              entradas.forEach(function(e) { if (e.Data === dataISO) sumEntrada += parseFloat(e.Quantidade || e.quantidade || 0); });
+              dataEntradas.push(sumEntrada);
+
+              var sumSaida = 0;
+              saidas.forEach(function(s) { if (s.Data === dataISO) sumSaida += parseFloat(s.Quantidade || s.quantidade || 0); });
+              dataSaidas.push(sumSaida);
             }
+
+            set({
+              resumo: resumo,
+              alertasEstoque: alertas.slice(0, 3),
+              ultimosProdutos: ultimosProds.slice(0, 5),
+              movimentacoesChartData: { labels: diasLabels, entradas: dataEntradas, saidas: dataSaidas },
+              categoriasChartData: { labels: catLabels, data: catData, colors: catColors }
+            });
           }
 
-          if (estaOffline) {
+          if (db && !Cebus.repositorios.criar('estoque')._estaOffline) { // Simplificado para usar Firebase se disponivel
+            Promise.all([
+              db.collection('produtos').get(),
+              db.collection('estoque').get(),
+              db.collection('entradas').get(),
+              db.collection('saidas').get()
+            ]).then(function(results) {
+              var produtos = [], estoque = [], entradas = [], saidas = [];
+              results[0].forEach(function(d) { produtos.push(d.data()); });
+              results[1].forEach(function(d) { var dt = d.data(); dt.id = d.id; estoque.push(dt); });
+              results[2].forEach(function(d) { entradas.push(d.data()); });
+              results[3].forEach(function(d) { saidas.push(d.data()); });
+              processarDados(produtos, estoque, entradas, saidas);
+            }).catch(function(e) { console.error('[Painel] Erro ao carregar do Firebase', e); });
+          } else {
+            // Modo Local
             var arm = Cebus.servicos.armazenamento;
-            var prodList = arm.obter('repo_produtos', []);
-            var fornList = arm.obter('repo_fornecedores', []);
-            var estList = arm.obter('repo_estoque', []);
-            var entList = arm.obter('repo_entradas', []);
-            var saiList = arm.obter('repo_saidas', []);
-            var distList = arm.obter('repo_distribuicoes', []);
-
-            var estoque = estList;
-            var entradas = entList.map(function(d) { return { id: d.id, tipo: 'ENTRADA', Data: d.Data, Produto: d.Produto, Quantidade: d.Quantidade }; });
-            var saidas = saiList.map(function(d) { return { id: d.id, tipo: 'SAIDA', Data: d.Data, Produto: d.Produto, Quantidade: d.Quantidade }; });
-            var dists = distList.map(function(d) { return { id: d.id, tipo: 'DISTRIBUICAO', Data: d.Data, Produto: d.Destino || '-', Quantidade: d.Quantidade }; });
-
-            var entradasHoje = entradas.filter(function (e) { return e.Data === hoje; }).length;
-            var saidasHoje = saidas.filter(function (s) { return s.Data === hoje; }).length;
-            var distHoje = dists.filter(function (d) { return d.Data === hoje; }).length;
-
-            var baixoEstoque = estoque.filter(function (i) {
-              return i.Situacao === 'BAIXO' || i.Situacao === 'ESGOTADO' || (i.Saldo !== undefined && i.Saldo <= 0);
-            });
-
-            var valorTotal = 0;
-            estoque.forEach(function (i) {
-              if (i.Saldo && i.precoVenda) valorTotal += i.Saldo * parseFloat(i.precoVenda);
-            });
-
-            var todas = entradas.slice(0, 5).concat(saidas.slice(0, 5)).concat(dists.slice(0, 5));
-            todas.sort(function (a, b) {
-              if (a.Data !== b.Data) return (b.Data || '').localeCompare(a.Data || '');
-              return 0;
-            });
-            var ultimos = todas.slice(0, 10);
-
-            set({
-              resumo: {
-                totalProdutos: prodList.length,
-                totalFornecedores: fornList.length,
-                totalEntradas: entradasHoje,
-                totalSaidas: saidasHoje,
-                movimentosHoje: entradasHoje + saidasHoje + distHoje,
-                valorEstoque: valorTotal,
-              },
-              ultimosMovimentos: ultimos,
-              produtosBaixoEstoque: baixoEstoque.slice(0, 10),
-            });
-            return;
+            processarDados(
+              arm.obter('repo_produtos', []),
+              arm.obter('repo_estoque', []),
+              arm.obter('repo_entradas', []),
+              arm.obter('repo_saidas', [])
+            );
           }
-
-          var db = Cebus.firebase.obterDb();
-
-          Promise.all([
-            db.collection('produtos').get(),
-            db.collection('fornecedores').get(),
-            db.collection('estoque').get(),
-            db.collection('entradas').get(),
-            db.collection('saidas').get(),
-            db.collection('distribuicoes').get(),
-          ]).then(function (results) {
-            var prodSnap = results[0], fornSnap = results[1], estSnap = results[2];
-            var entSnap = results[3], saiSnap = results[4], distSnap = results[5];
-
-            var estoque = [];
-            estSnap.forEach(function (d) { estoque.push(d.data()); });
-
-            var entradas = [];
-            entSnap.forEach(function (d) { entradas.push({ id: d.id, tipo: 'ENTRADA', Data: d.data().Data, Produto: d.data().Produto, Quantidade: d.data().Quantidade }); });
-
-            var saidas = [];
-            saiSnap.forEach(function (d) { saidas.push({ id: d.id, tipo: 'SAIDA', Data: d.data().Data, Produto: d.data().Produto, Quantidade: d.data().Quantidade }); });
-
-            var dists = [];
-            distSnap.forEach(function (d) { dists.push({ id: d.id, tipo: 'DISTRIBUICAO', Data: d.data().Data, Produto: d.data().Destino || '-', Quantidade: d.data().Quantidade }); });
-
-            var entradasHoje = entradas.filter(function (e) { return e.Data === hoje; }).length;
-            var saidasHoje = saidas.filter(function (s) { return s.Data === hoje; }).length;
-            var distHoje = dists.filter(function (d) { return d.Data === hoje; }).length;
-
-            var baixoEstoque = estoque.filter(function (i) {
-              return i.Situacao === 'BAIXO' || i.Situacao === 'ESGOTADO' || (i.Saldo !== undefined && i.Saldo <= 0);
-            });
-
-            var valorTotal = 0;
-            estoque.forEach(function (i) {
-              if (i.Saldo && i.precoVenda) valorTotal += i.Saldo * parseFloat(i.precoVenda);
-            });
-
-            var todas = entradas.slice(0, 5).concat(saidas.slice(0, 5)).concat(dists.slice(0, 5));
-            todas.sort(function (a, b) {
-              if (a.Data !== b.Data) return (b.Data || '').localeCompare(a.Data || '');
-              return 0;
-            });
-            var ultimos = todas.slice(0, 10);
-
-            set({
-              resumo: {
-                totalProdutos: prodSnap.size,
-                totalFornecedores: fornSnap.size,
-                totalEntradas: entradasHoje,
-                totalSaidas: saidasHoje,
-                movimentosHoje: entradasHoje + saidasHoje + distHoje,
-                valorEstoque: valorTotal,
-              },
-              ultimosMovimentos: ultimos,
-              produtosBaixoEstoque: baixoEstoque.slice(0, 10),
-            });
-          }).catch(function (err) {
-            console.warn('[Painel] Erro ao carregar dashboard:', err);
-          });
-        },
-        definirResumo: function (parcial) {
-          set({ resumo: Object.assign({}, store.obterEstado().resumo, parcial) });
-        },
+        }
       };
-    },
+    }
   });
 
   Cebus.registrador.registrarStore('painel', store);

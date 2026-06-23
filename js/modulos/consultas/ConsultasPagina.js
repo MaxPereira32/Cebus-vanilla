@@ -1,3 +1,10 @@
+/* ==========================================================================
+   ARQUIVO: ConsultasPagina.js
+   GERADO EM: 21/06/2026
+   ==========================================================================
+   DOCUMENTAÇÃO PADRÃO DO PROJETO
+   ========================================================================== */
+
 (function () {
   var pagina = {
     mudarItensPorPagina: function(el) { if (paginacao) paginacao.mudarPorPagina(el.value); },

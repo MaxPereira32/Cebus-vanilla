@@ -1,3 +1,10 @@
+/* ==========================================================================
+   ARQUIVO: EntradasPagina.js
+   GERADO EM: 21/06/2026
+   ==========================================================================
+   DOCUMENTAÇÃO PADRÃO DO PROJETO
+   ========================================================================== */
+
 (function () {
   var paginacao = null;
   var busca = null;
@@ -89,19 +96,24 @@
     return html;
   }
 
-  function renderizarProdutoAutocomplete(valor, idProduto) {
+  function renderizarProdutoAutocomplete(valor, idProduto, readonly) {
     var html = '<div class="form-group">';
     html += '<label class="form-label">Produto</label>';
-    html += '<input type="text" class="form-control" id="inputProdutoAutocomplete" list="listaEstoqueDatalist" value="' + (valor || '') + '" placeholder="Digite ou selecione um produto..." required style="margin-bottom:0.35rem;" />';
-    html += '<datalist id="listaEstoqueDatalist">';
-    for (var i = 0; i < listaEstoque.length; i++) {
-      var p = listaEstoque[i];
-      html += '<option value="' + (p.Produto || '') + '" data-id="' + (p.ID_Produto || '') + '" data-un="' + (p.Unidade || '') + '">' + (p.ID_Produto || '') + ' - ' + (p.Unidade || '') + '</option>';
+    if (readonly) {
+      html += '<input type="text" class="form-control" id="inputProdutoAutocomplete" value="' + (valor || '') + '" readonly style="margin-bottom:0.35rem; background: var(--cor-fundo);" />';
+    } else {
+      html += '<input type="text" class="form-control" id="inputProdutoAutocomplete" list="listaEstoqueDatalist" value="' + (valor || '') + '" placeholder="Digite ou selecione um produto..." required style="margin-bottom:0.35rem;" />';
+      html += '<datalist id="listaEstoqueDatalist">';
+      for (var i = 0; i < listaEstoque.length; i++) {
+        var p = listaEstoque[i];
+        html += '<option value="' + (p.Produto || '') + '" data-id="' + (p.ID_Produto || '') + '" data-un="' + (p.Unidade || '') + '">' + (p.ID_Produto || '') + ' - ' + (p.Unidade || '') + '</option>';
+      }
+      html += '</datalist>';
     }
-    html += '</datalist>';
     html += '<input type="hidden" id="inputEntradaID_Produto" name="ID_Produto" value="' + (idProduto || '') + '" />';
     if (idProduto) {
-      html += '<span style="font-size:0.75rem;color:var(--cor-primaria);">' + idProduto + ' â€” produto cadastrado</span>';
+      html += '<span style="font-size:0.75rem;color:var(--cor-primaria);">' + idProduto + ' — produto vinculado</span>';
+      if (readonly) html += '<span style="font-size:0.75rem;color:var(--cor-texto-secundario);display:block;margin-top:0.25rem;">(Para corrigir o nome, edite na aba Estoque)</span>';
     }
     html += '</div>';
     return html;
@@ -128,7 +140,7 @@
     html += '<label class="form-label">Categoria</label>';
     html += '<select class="form-control" id="selectCategoria" name="Categoria">';
     html += '<option value="">Selecione</option>';
-    var categorias = ['Hortifrut', 'Polpa de frutas', 'Ração'];
+    var categorias = ['Hortifrut', 'Laticínios', 'Ração'];
     for (var i = 0; i < categorias.length; i++) {
       var c = categorias[i];
       var selected = c === valor ? ' selected' : '';
@@ -330,7 +342,7 @@
         titulo: 'Editar Entrada',
         largura: 550,
         conteudo: '<p style="font-size:0.85rem;color:var(--cor-texto-secundario);margin-bottom:1rem;">ID: ' + (item.ID_Entrada || '-') + '</p>' +
-          renderizarProdutoAutocomplete(item.Produto || item.produto || '', item.ID_Produto || '') +
+          renderizarProdutoAutocomplete(item.Produto || item.produto || '', item.ID_Produto || '', true) +
           renderizarSelectCategoria(item.Categoria || '') +
           renderizarSelectFornecedor(fornecedorValor) +
           Cebus.componentes.formulario.renderizar({

@@ -1,3 +1,10 @@
+/* ==========================================================================
+   ARQUIVO: RelatoriosStore.js
+   GERADO EM: 21/06/2026
+   ==========================================================================
+   DOCUMENTAÇÃO PADRÃO DO PROJETO
+   ========================================================================== */
+
 (function () {
   function _listarColecao(colecao) {
     var repo = Cebus.repositorios.criar(colecao);
