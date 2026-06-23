@@ -1,0 +1,10 @@
+window.Cebus = window.Cebus || {};
+Cebus.config = Cebus.config || {};
+Cebus.config.versao = '1.0.0';
+Cebus.config.nomeSistema = 'Estoque Kitchen';
+Cebus.config.nomeCurto = 'Cebus';
+Cebus.config.descricao = 'Gestão de Estoque para Cozinhas Profissionais';
+Cebus.config.temaPadrao = 'dark';
+Cebus.config.itensPorPagina = 20;
+Cebus.config.exibirNavInferior = true;
+Cebus.config.animacoesAtivas = true;

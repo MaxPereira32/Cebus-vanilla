@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-tema="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cebus - Gestão de Estoque</title>
+  <meta name="description" content="Sistema de gestão de estoque para cozinhas profissionais">
+
+  <!-- CDN: Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+  <!-- CDN: Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Estilos Globais -->
+  <link rel="stylesheet" href="css/nucleo/reset.css">
+  <link rel="stylesheet" href="css/nucleo/temas.css">
+  <link rel="stylesheet" href="css/nucleo/animacoes.css">
+  <link rel="stylesheet" href="css/compartilhado/componentes.css">
+
+  <!-- Namespace Global -->
+  <script>window.Cebus = window.Cebus || {};</script>
+
+  <!-- Configuração (sempre carregados) -->
+  <script src="configuracao/configApp.js"></script>
+  <script src="configuracao/configFirebase.js"></script>
+  <script src="configuracao/configRotas.js"></script>
+  <script src="configuracao/configTema.js"></script>
+  <script src="configuracao/configModulos.js?v=1.0.1"></script>
+
+  <!-- Núcleo (sempre carregados) -->
+  <script src="js/nucleo/Inicializador.js"></script>
+  <script src="js/nucleo/FabricaEstado.js"></script>
+  <script src="js/nucleo/BarramentoEventos.js"></script>
+  <script src="js/nucleo/GerenciadorPaginas.js"></script>
+  <script src="js/nucleo/ModalBase.js"></script>
+  <script src="js/nucleo/CarregadorDinamico.js?v=1.0.6"></script>
+  <script src="js/nucleo/cache/CacheRotas.js"></script>
+  <script src="js/nucleo/cache/CacheEstilos.js"></script>
+  <script src="js/nucleo/interceptadores/verificarAutenticacao.js"></script>
+  <script src="js/nucleo/interceptadores/verificarPermissao.js"></script>
+  <script src="js/nucleo/interceptadores/registrarNavegacao.js"></script>
+  <script src="js/nucleo/hooks/usePaginacao.js"></script>
+  <script src="js/nucleo/hooks/useBusca.js"></script>
+
+  <!-- Constantes -->
+  <script src="js/compartilhado/constantes/Rotas.js"></script>
+  <script src="js/compartilhado/constantes/Situacoes.js"></script>
+  <script src="js/compartilhado/constantes/Permissoes.js"></script>
+  <script src="js/compartilhado/constantes/Colecoes.js"></script>
+
+  <!-- Utilitários -->
+  <script src="js/compartilhado/utilitarios/datas.js"></script>
+  <script src="js/compartilhado/utilitarios/ids.js?v=1.0.6"></script>
+  <script src="js/compartilhado/utilitarios/mascaras.js"></script>
+
+  <!-- Serviços Base -->
+  <script src="js/compartilhado/servicos/ServicoArmazenamento.js"></script>
+  <script src="js/compartilhado/servicos/ServicoTema.js"></script>
+  <script src="js/compartilhado/servicos/ServicoExportacao.js"></script>
+  <script src="js/compartilhado/servicos/ServicoBackup.js"></script>
+  <script src="js/compartilhado/servicos/ServicoLog.js"></script>
+  <script src="js/compartilhado/servicos/ServicoDebug.js"></script>
+
+  <!-- Notificações -->
+  <script src="js/compartilhado/notificacoes/Notificacao.js"></script>
+  <script src="js/compartilhado/notificacoes/Confirmacao.js?v=1.0.1"></script>
+
+  <!-- Componentes Compartilhados -->
+  <script src="js/compartilhado/componentes/Modal.js"></script>
+  <script src="js/compartilhado/componentes/Formulario.js"></script>
+  <script src="js/compartilhado/componentes/TabelaDinamica.js"></script>
+
+  <!-- Layout -->
+  <script src="js/compartilhado/layout/Cabecalho.js"></script>
+  <script src="js/compartilhado/layout/BarraLateral.js"></script>
+  <script src="js/compartilhado/layout/Layout.js"></script>
+  <script src="js/compartilhado/layout/PainelAcoes.js"></script>
+
+  <!-- Widgets -->
+  <script src="js/compartilhado/widgets/CartaoResumo.js"></script>
+
+  <!-- Ganchos -->
+  <script src="js/compartilhado/ganchos/GanchoAutenticacao.js"></script>
+  <script src="js/compartilhado/ganchos/GanchoTema.js"></script>
+
+  <!-- Repositório Base -->
+  <script src="js/compartilhado/repositorios/RepositorioBase.js?v=1.0.6"></script>
+
+  <!-- Firebase -->
+  <script src="js/firebase/ConexaoFirebase.js?v=1.0.6"></script>
+  <script src="js/firebase/AutenticacaoFirebase.js?v=1.0.6"></script>
+  <script src="js/firebase/RepositorioFirebase.js?v=1.0.6"></script>
+  <script src="js/firebase/index.js?v=1.0.6"></script>
+
+  <!-- Módulo de Autenticação (carregado sempre pois é necessário no login) -->
+  <script src="js/modulos/autenticacao/AutenticacaoStore.js?v=1.0.1"></script>
+  <script src="js/modulos/autenticacao/AutenticacaoPagina.js"></script>
+
+  <!-- Roteador (deve vir após todos os scripts base) -->
+  <script src="js/nucleo/Roteador.js"></script>
+
+  <!-- Inicialização -->
+  <script src="js/nucleo/Principal.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+</body>
+</html>

@@ -1,0 +1,87 @@
+:root, [data-tema="dark"] {
+  --cor-fundo: #0f1a14;
+  --cor-superficie: #132118;
+  --cor-texto: #ecfdf5;
+  --cor-texto-secundario: #a7f3d0;
+  --cor-borda: rgba(16, 185, 129, 0.15);
+  --cor-primaria: #10B981;
+  --cor-perigo: #ef4444;
+  --cor-aviso: #f59e0b;
+  --cor-sucesso: #22c55e;
+  --cor-info: #3b82f6;
+  --cor-hover: rgba(16, 185, 129, 0.12);
+  --surface-0: #0f1a14;
+  --surface-1: #132118;
+  --surface-2: #17281c;
+  --surface-3: #1c3022;
+  --surface-4: #213828;
+  --text-primary: #ecfdf5;
+  --text-secondary: #a7f3d0;
+  --text-tertiary: #6ee7b7;
+  --text-disabled: #4a5c50;
+  --accent: #10B981;
+  --accent-hover: #34d399;
+  --accent-claro: rgba(16, 185, 129, 0.12);
+  --border: rgba(16, 185, 129, 0.15);
+  --border-hover: rgba(16, 185, 129, 0.3);
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --success: #22c55e;
+  --info: #3b82f6;
+  --neu-shadow-dark: rgba(0, 0, 0, 0.5);
+  --neu-shadow-light: rgba(255, 255, 255, 0.04);
+  --gradient-start: #0f1a14;
+  --gradient-end: #1a2e22;
+  color-scheme: dark;
+}
+[data-tema="white"] {
+  --cor-fundo: #f0fdf4;
+  --cor-superficie: #dcfce7;
+  --cor-texto: #0f1a14;
+  --cor-texto-secundario: #166534;
+  --cor-borda: rgba(16, 185, 129, 0.25);
+  --cor-primaria: #10B981;
+  --cor-perigo: #ef4444;
+  --cor-aviso: #f59e0b;
+  --cor-sucesso: #22c55e;
+  --cor-info: #3b82f6;
+  --cor-hover: rgba(16, 185, 129, 0.1);
+  --surface-0: #f0fdf4;
+  --surface-1: #dcfce7;
+  --surface-2: #bbf7d0;
+  --surface-3: #86efac;
+  --surface-4: #4ade80;
+  --text-primary: #0f1a14;
+  --text-secondary: #166534;
+  --text-tertiary: #15803d;
+  --text-disabled: #86a090;
+  --accent: #10B981;
+  --accent-hover: #059669;
+  --accent-claro: rgba(16, 185, 129, 0.1);
+  --border: rgba(16, 185, 129, 0.25);
+  --border-hover: rgba(16, 185, 129, 0.45);
+  --neu-shadow-dark: rgba(16, 30, 20, 0.12);
+  --neu-shadow-light: rgba(255, 255, 255, 0.7);
+  --gradient-start: #f0fdf4;
+  --gradient-end: #dcfce7;
+  color-scheme: light;
+}
+:root {
+  --layout-padding-x: 24px;
+  --layout-padding-y: 24px;
+  --layout-max-width: 1800px;
+}
+@media (min-width: 640px) {
+  :root { --layout-padding-x: 32px; --layout-padding-y: 32px; }
+}
+@media (min-width: 1024px) {
+  :root { --layout-padding-x: 40px; --layout-padding-y: 36px; }
+}
+@media (min-width: 1440px) {
+  :root { --layout-padding-x: 48px; --layout-padding-y: 40px; }
+}
+body {
+  background: var(--surface-0);
+  color: var(--text-primary);
+  transition: background 0.3s, color 0.3s;
+}

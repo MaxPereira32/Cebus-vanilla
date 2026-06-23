@@ -1,0 +1,163 @@
+(function () {
+  'use strict';
+
+  var cachePaginas = {};
+  var cacheEstilos = {};
+  var paginaAtual = null;
+  var rotaAtual = null;
+
+  var Roteador = {
+    iniciar: function () {
+      window.addEventListener('hashchange', this.resolver.bind(this));
+      this.resolver();
+      console.log('[Cebus] Roteador iniciado');
+    },
+
+    navegar: function (caminho) {
+      window.location.hash = '#' + caminho;
+    },
+
+    recarregar: function () {
+      this.resolver();
+    },
+
+    resolver: function () {
+      var hash = window.location.hash.slice(1) || '/login';
+      var partes = hash.split('?');
+      var caminho = partes[0];
+      var params = {};
+      if (partes[1]) {
+        partes[1].split('&').forEach(function (p) {
+          var kv = p.split('=');
+          params[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1] || '');
+        });
+      }
+
+      if (caminho === rotaAtual && cachePaginas[caminho]) {
+        return;
+      }
+
+      rotaAtual = caminho;
+      this._renderizar(caminho, params);
+    },
+
+    _renderizar: function (caminho, params) {
+      var root = document.getElementById('root');
+      if (!root) return;
+
+      var pagina;
+
+      if (cachePaginas[caminho]) {
+        pagina = cachePaginas[caminho];
+      } else {
+        pagina = Cebus.registrador.obterPagina(caminho);
+        if (!pagina) {
+          pagina = Cebus.registrador.obterPagina('/login');
+          if (!pagina) return;
+        }
+      }
+
+      var self = this;
+
+      function exibirPagina() {
+        try {
+          if (pagina.antesRenderizar) pagina.antesRenderizar();
+          var html = pagina.renderar ? pagina.renderar(params) : '';
+          root.innerHTML = html;
+          self._injetarEstilosDaPagina(caminho, pagina);
+          if (pagina.depoisRenderizar) pagina.depoisRenderizar();
+          if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+          }
+          paginaAtual = pagina;
+          if (!cachePaginas[caminho]) {
+            cachePaginas[caminho] = pagina;
+          }
+        } catch (e) {
+          console.error('[Cebus] Erro ao renderizar:', caminho, e);
+          root.innerHTML = '<div class="flex items-center justify-center p-6"><p>Erro ao carregar página</p></div>';
+        }
+      }
+
+      exibirPagina();
+    },
+
+    _injetarEstilosDaPagina: function (caminho, pagina) {
+      if (!pagina || !pagina.css) return;
+      var chave = 'cebus-estilo-' + caminho.replace(/\//g, '-');
+      if (document.getElementById(chave)) return;
+      var style = document.createElement('style');
+      style.id = chave;
+      style.textContent = pagina.css;
+      document.head.appendChild(style);
+    },
+
+    obterPaginaAtual: function () { return paginaAtual; },
+    obterRotaAtual: function () { return rotaAtual; },
+    limparCache: function () { cachePaginas = {}; },
+  };
+
+  Cebus.roteador = Roteador;
+
+  // Delegacao global de eventos
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-acao]');
+    if (!el) return;
+
+    var acao = el.getAttribute('data-acao');
+
+    if (acao === 'navegar') {
+      var rota = el.getAttribute('data-rota');
+      if (rota) { Cebus.roteador.navegar(rota); }
+      return;
+    }
+
+    var pagina = Cebus.roteador.obterPaginaAtual();
+    if (pagina && typeof pagina[acao] === 'function') {
+      pagina[acao](el, e);
+      return;
+    }
+    // Acoes globais
+    if (acao === 'sair' || acao === 'logout') {
+      var auth = Cebus.registrador.obterStore('autenticacao');
+      if (auth && auth.logout) auth.logout();
+      Cebus.roteador.navegar('/login');
+      return;
+    }
+    if (acao === 'alternarTema') {
+      Cebus.servicos.tema.alternar();
+      return;
+    }
+    if (acao === 'alternarMenu') {
+      var bl = document.querySelector('.barra-lateral');
+      if (bl) bl.classList.toggle('aberta');
+      return;
+    }
+    if (acao === 'cancelarFormulario') {
+      Cebus.componentes.modal.fechar();
+      return;
+    }
+  });
+
+  document.addEventListener('submit', function (e) {
+    var form = e.target.closest('[data-acao]');
+    if (!form) return;
+    var acao = form.getAttribute('data-acao');
+    var pagina = Cebus.roteador.obterPaginaAtual();
+    if (pagina && typeof pagina[acao] === 'function') {
+      pagina[acao](form, e);
+    }
+  });
+
+  document.addEventListener('change', function (e) {
+    var el = e.target.closest('[data-acao]');
+    if (!el) return;
+    var acao = el.getAttribute('data-acao');
+    var pagina = Cebus.roteador.obterPaginaAtual();
+    if (pagina && typeof pagina[acao] === 'function') {
+      pagina[acao](el, e);
+    }
+  });
+
+  console.log('[Cebus] Roteador carregado');
+})();
